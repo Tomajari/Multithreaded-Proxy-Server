@@ -15,7 +15,7 @@ private:
     int backendPort;
     SOCKET serverSocket;
 
-    // Updated function declarations to use SOCKET type
+    // Updated function declarations for SOCKET type
     void handleClient(SOCKET clientSocket);
     void forwardToBackend(const std::string& request, SOCKET clientSocket);
 };
