@@ -1,5 +1,5 @@
 # Multithreaded Proxy Server
-This is a multithreaded reverse proxy server that can handle multiple client requests concurrently using C++ threads. It includes features like request forwarding, token-based authorization, rate limiting, and logging.  
+RebelGate, is a multithreaded reverse proxy server that can handle multiple client requests concurrently using C++ threads. It includes features like request forwarding, token-based authorization, rate limiting, and logging.  
 Skills Demonstrated: Multithreading, Network Programming, Sockets, HTTP Proxying, Authorization, Logging.
 
 ---
