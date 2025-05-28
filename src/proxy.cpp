@@ -17,7 +17,7 @@ void ProxyServer::start() {
     sockaddr_in serverAddr{};
     serverSocket = socket(AF_INET, SOCK_STREAM, 0);
     if (serverSocket == INVALID_SOCKET) {
-        std::cerr << "❌ Error: Could not create socket." << std::endl;
+        std::cerr << "ERROR: Could not create socket." << std::endl;
         return;
     }
 
@@ -26,7 +26,7 @@ void ProxyServer::start() {
     serverAddr.sin_addr.s_addr = INADDR_ANY;
 
     if (bind(serverSocket, (struct sockaddr*)&serverAddr, sizeof(serverAddr)) == SOCKET_ERROR) {
-        std::cerr << "❌ Error: Bind failed. Port might be in use." << std::endl;
+        std::cerr << "ERROR: Bind failed. Port might be in use." << std::endl;
         return;
     }
 
@@ -89,7 +89,7 @@ void ProxyServer::forwardToBackend(const std::string& request, SOCKET clientSock
             send(clientSocket, buffer, bytesRead, 0);
         }
     } else {
-        std::cerr << "⚠️ Could not connect to backend server.\n";
+        std::cerr << "ERROR: Could not connect to backend server.\n";
     }
 
     closesocket(backendSocket);

@@ -3,7 +3,8 @@
 #include <ctime>
 #include <iomanip>
 #include <sstream>
-#include <filesystem> // For creating directories
+#include <filesystem> 
+#include <iostream>   
 
 void Logger::logRequest(const std::string& ip, const std::string& method, const std::string& path, int status) {
     // Ensure the logs directory exists
