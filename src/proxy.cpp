@@ -50,7 +50,7 @@ void ProxyServer::handleClient(SOCKET clientSocket) {
     }
 
     std::string request(buffer);
-    std::string clientIP = "127.0.0.1"; // In production, extract from sockaddr
+    std::string clientIP = "127.0.0.1"; //extract from sockaddr
 
     if (!Auth::isAuthorized(request)) {
         std::string response = "HTTP/1.1 403 Forbidden\r\nContent-Length: 0\r\n\r\n";
