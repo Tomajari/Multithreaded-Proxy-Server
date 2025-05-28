@@ -13,7 +13,7 @@ void Logger::logRequest(const std::string& ip, const std::string& method, const 
     std::ofstream logFile("logs/rebelgate.log", std::ios::app); // Open in append mode
 
     if (!logFile.is_open()) {
-        std::cerr << "❌ Logger: Failed to open logs/rebelgate.log" << std::endl;
+        std::cerr << " Logger: Failed to open logs/rebelgate.log" << std::endl;
         return;
     }
 
