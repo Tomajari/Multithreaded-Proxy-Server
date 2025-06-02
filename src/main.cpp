@@ -4,7 +4,7 @@
 int main() {
     int port = 8080;                // Port that RebelGate will listen on
     std::string backendHost = "127.0.0.1"; // Backend server 
-    int backendPort = 9000;         // Port that backend server is running on
+    int backendPort = 9000;         // Backend server port
 
     std::cout << "Starting RebelGate on port " << port << "..." << std::endl;
 
