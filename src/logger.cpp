@@ -7,7 +7,7 @@
 #include <iostream>   
 
 void Logger::logRequest(const std::string& ip, const std::string& method, const std::string& path, int status) {
-    // Ensure logs directory exists
+    // Ensure the logs directory exists
     std::filesystem::create_directory("logs");
 
     std::ofstream logFile("logs/rebelgate.log", std::ios::app); // Open in append mode
@@ -17,7 +17,7 @@ void Logger::logRequest(const std::string& ip, const std::string& method, const 
         return;
     }
 
-    // Gets current time in a readable format
+    // Get current time in readable format
     auto now = std::time(nullptr);
     std::stringstream timeStream;
     timeStream << std::put_time(std::localtime(&now), "%Y-%m-%d %H:%M:%S");
