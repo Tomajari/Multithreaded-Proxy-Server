@@ -3,7 +3,7 @@
 #include "../include/logger.h"
 #include <iostream>
 #include <winsock2.h>  // Windows-specific socket functions
-#include <ws2tcpip.h>  // For inet_pton and other IP utilities
+#include <ws2tcpip.h>  // For inet_pton and IP utilities
 #include <cstring>
 #include <thread>
 
@@ -54,7 +54,9 @@ void ProxyServer::handleClient(SOCKET clientSocket) {
 
     if (!Auth::isAuthorized(request)) {
         std::string response = "HTTP/1.1 403 Forbidden\r\nContent-Length: 0\r\n\r\n";
-        send(clientSocket, response.c_str(), response.size(), 0);
+        if (send(clientSocket, response.c_str(), static_cast<int>(response.size()), 0) == SOCKET_ERROR) {
+            std::cerr << "Failed to send response\n";
+        }
         Logger::logRequest(clientIP, "UNKNOWN", "N/A", 403);
         closesocket(clientSocket);
         return;
@@ -62,7 +64,9 @@ void ProxyServer::handleClient(SOCKET clientSocket) {
 
     if (Auth::isRateLimited(clientIP)) {
         std::string response = "HTTP/1.1 429 Too Many Requests\r\nContent-Length: 0\r\n\r\n";
-        send(clientSocket, response.c_str(), response.size(), 0);
+        if (send(clientSocket, response.c_str(), static_cast<int>(response.size()), 0) == SOCKET_ERROR) {
+            std::cerr << "Failed to send response\n";
+        }
         Logger::logRequest(clientIP, "UNKNOWN", "N/A", 429);
         closesocket(clientSocket);
         return;
@@ -78,10 +82,19 @@ void ProxyServer::forwardToBackend(const std::string& request, SOCKET clientSock
 
     backendAddr.sin_family = AF_INET;
     backendAddr.sin_port = htons(backendPort);
-    inet_pton(AF_INET, backendHost.c_str(), &backendAddr.sin_addr);
+    
+    // Use inet_pton instead of deprecated inet_addr
+    if (inet_pton(AF_INET, backendHost.c_str(), &backendAddr.sin_addr) != 1) {
+        std::cerr << "Invalid address format\n";
+        closesocket(backendSocket);
+        return;
+    }
 
     if (connect(backendSocket, (sockaddr*)&backendAddr, sizeof(backendAddr)) == 0) {
-        send(backendSocket, request.c_str(), request.size(), 0);
+        // Fix size_t warning
+        if (send(backendSocket, request.c_str(), static_cast<int>(request.size()), 0) == SOCKET_ERROR) {
+            std::cerr << "Failed to send request to backend\n";
+        }
 
         char buffer[4096];
         int bytesRead = recv(backendSocket, buffer, sizeof(buffer), 0);
