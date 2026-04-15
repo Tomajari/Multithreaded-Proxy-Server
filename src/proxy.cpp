@@ -2,22 +2,27 @@
 #include "../include/auth.h"
 #include "../include/logger.h"
 #include <iostream>
-#include <winsock2.h>  // Windows-specific socket functions
-#include <ws2tcpip.h>  // For inet_pton and  IP utilities
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <unistd.h>
 #include <cstring>
 #include <thread>
 
-// Link with Winsock library
-#pragma comment(lib, "ws2_32.lib")
+
 
 ProxyServer::ProxyServer(int port, const std::string& backendHost, int backendPort)
     : serverPort(port), backendHost(backendHost), backendPort(backendPort) {}
 
 void ProxyServer::start() {
     sockaddr_in serverAddr{};
+
+
+    std::cout << "[DEBUG] Creating socket..." << std::endl;
     serverSocket = socket(AF_INET, SOCK_STREAM, 0);
-    if (serverSocket == INVALID_SOCKET) {
-        std::cerr << "ERROR: Could not create socket." << std::endl;
+    if (serverSocket < 0) {
+        std::cerr << "[DEBUG] ERROR: Could not create socket." << std::endl;
+        perror("socket");
         return;
     }
 
@@ -25,27 +30,42 @@ void ProxyServer::start() {
     serverAddr.sin_port = htons(serverPort);
     serverAddr.sin_addr.s_addr = INADDR_ANY;
 
-    if (bind(serverSocket, (struct sockaddr*)&serverAddr, sizeof(serverAddr)) == SOCKET_ERROR) {
-        std::cerr << "ERROR: Bind failed. Port might be in use." << std::endl;
+
+
+    std::cout << "[DEBUG] Binding socket to port " << serverPort << "..." << std::endl;
+    if (bind(serverSocket, (struct sockaddr*)&serverAddr, sizeof(serverAddr)) < 0) {
+        std::cerr << "[DEBUG] ERROR: Bind failed. Port might be in use." << std::endl;
+        perror("bind");
         return;
     }
 
-    listen(serverSocket, 10);
+
+    std::cout << "[DEBUG] Listening..." << std::endl;
+    if (listen(serverSocket, 10) < 0) {
+        std::cerr << "[DEBUG] ERROR: Listen failed." << std::endl;
+        perror("listen");
+        return;
+    }
     std::cout << "[RebelGate] Listening on port " << serverPort << "..." << std::endl;
 
     while (true) {
-        SOCKET clientSocket = accept(serverSocket, nullptr, nullptr);
-        if (clientSocket != INVALID_SOCKET) {
+        std::cout << "[DEBUG] Waiting for client connection..." << std::endl;
+        int clientSocket = accept(serverSocket, nullptr, nullptr);
+        if (clientSocket >= 0) {
+            std::cout << "[DEBUG] Accepted client connection: fd=" << clientSocket << std::endl;
             std::thread(&ProxyServer::handleClient, this, clientSocket).detach();
+        } else {
+            perror("accept");
         }
     }
 }
 
-void ProxyServer::handleClient(SOCKET clientSocket) {
+void ProxyServer::handleClient(int clientSocket) {
     char buffer[4096] = {0};
+
     int bytesReceived = recv(clientSocket, buffer, sizeof(buffer), 0);
     if (bytesReceived <= 0) {
-        closesocket(clientSocket);
+        close(clientSocket);
         return;
     }
 
@@ -56,7 +76,7 @@ void ProxyServer::handleClient(SOCKET clientSocket) {
         std::string response = "HTTP/1.1 403 Forbidden\r\nContent-Length: 0\r\n\r\n";
         send(clientSocket, response.c_str(), response.size(), 0);
         Logger::logRequest(clientIP, "UNKNOWN", "N/A", 403);
-        closesocket(clientSocket);
+        close(clientSocket);
         return;
     }
 
@@ -64,16 +84,16 @@ void ProxyServer::handleClient(SOCKET clientSocket) {
         std::string response = "HTTP/1.1 429 Too Many Requests\r\nContent-Length: 0\r\n\r\n";
         send(clientSocket, response.c_str(), response.size(), 0);
         Logger::logRequest(clientIP, "UNKNOWN", "N/A", 429);
-        closesocket(clientSocket);
+        close(clientSocket);
         return;
     }
 
     forwardToBackend(request, clientSocket);
-    closesocket(clientSocket);
+    close(clientSocket);
 }
 
-void ProxyServer::forwardToBackend(const std::string& request, SOCKET clientSocket) {
-    SOCKET backendSocket = socket(AF_INET, SOCK_STREAM, 0);
+void ProxyServer::forwardToBackend(const std::string& request, int clientSocket) {
+    int backendSocket = socket(AF_INET, SOCK_STREAM, 0);
     sockaddr_in backendAddr{};
 
     backendAddr.sin_family = AF_INET;
@@ -92,5 +112,5 @@ void ProxyServer::forwardToBackend(const std::string& request, SOCKET clientSock
         std::cerr << "ERROR: Could not connect to backend server.\n";
     }
 
-    closesocket(backendSocket);
+    close(backendSocket);
 }

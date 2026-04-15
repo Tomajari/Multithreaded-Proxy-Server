@@ -3,12 +3,25 @@
 #include <ctime>
 #include <iomanip>
 #include <sstream>
-#include <filesystem> 
+#if __cplusplus >= 201703L
+#include <filesystem>
+namespace fs = std::filesystem;
+#else
+#include <sys/stat.h>
+#endif
 #include <iostream>   
 
 void Logger::logRequest(const std::string& ip, const std::string& method, const std::string& path, int status) {
+
     // Ensure the logs directory exists
-    std::filesystem::create_directory("logs");
+#if __cplusplus >= 201703L
+    fs::create_directory("logs");
+#else
+    struct stat st = {0};
+    if (stat("logs", &st) == -1) {
+        mkdir("logs", 0700);
+    }
+#endif
 
     std::ofstream logFile("logs/rebelgate.log", std::ios::app); // Open in append mode
 
